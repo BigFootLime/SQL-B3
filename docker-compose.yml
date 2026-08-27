@@ -1,0 +1,22 @@
+name: sql-b3
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: labuser
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD dans .env}
+      POSTGRES_DB: blogapp_lab
+    ports:
+      - "127.0.0.1:55436:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - .:/workspace:ro
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U labuser -d blogapp_lab"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+volumes:
+  pgdata:
+
