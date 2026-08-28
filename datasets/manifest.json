@@ -1,0 +1,40 @@
+{
+  "source": "https://archive.org/details/stackexchange",
+  "site": "https://coffee.stackexchange.com",
+  "source_archive_sha256": "ed92031e75185b1e5549ae257b5280423941d17751042b0369b1f2d3e8d90952",
+  "files": {
+    "badges.csv": {
+      "sha256": "f22191ebbf1e1da4a66b25ffb9ea60a49aed129a63c17cfcfc7e3ea2972d4610",
+      "rows": 14615
+    },
+    "comments.csv": {
+      "sha256": "93ad250936fddf586b7643e8f8bba5e69e977dbd507dd86401311003e2431e91",
+      "rows": 4985
+    },
+    "post_ids.csv": {
+      "sha256": "8a5d1e1ae6fca04fd250528886cfe3049832568fc52eaa55d9ce628456b6a024",
+      "rows": 4525
+    },
+    "post_tags.csv": {
+      "sha256": "1a5a16661887cedc9fb5a083bd6246d4cfa9b105cbb5bcbc8f6c6e0e7a26703c",
+      "rows": 2947
+    },
+    "posts.csv": {
+      "sha256": "7671f761b1ab4cbc455c04025830fe2012d3dded480d5977ecd33cf00c01bc97",
+      "rows": 4525
+    },
+    "tags.csv": {
+      "sha256": "6ec2cc31ed7d74966aa0e6aa1057631bda659f9841ab9caa0559fd7291276360",
+      "rows": 114
+    },
+    "users.csv": {
+      "sha256": "aecc5c10886e883ae5a70b80284b020850c7ceae0e6faba850cabcd99b93d548",
+      "rows": 11595
+    },
+    "votes.csv": {
+      "sha256": "fd56f2da3f7696257b37285998e713bfc7766b54263fd969c03ec0fed1f8adaa",
+      "rows": 19909
+    }
+  },
+  "zip_sha256": "1dd7349741fcd0a3facd02f992b3f97a52dedcca65a90a68f16c4c7ce9442b95"
+}
