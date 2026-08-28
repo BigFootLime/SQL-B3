@@ -41,6 +41,7 @@ SELECT jsonb_pretty(jsonb_build_object(
     'pg_stat_statements',(SELECT jsonb_agg(to_jsonb(s)) FROM (
         SELECT query,calls,ROUND(mean_exec_time::numeric,3) AS moyenne_ms,rows
         FROM pg_stat_statements WHERE query LIKE '%advanced_search%'
+          AND dbid=(SELECT oid FROM pg_database WHERE datname=current_database())
         ORDER BY calls DESC LIMIT 5) s)));
 \o
 \pset tuples_only off

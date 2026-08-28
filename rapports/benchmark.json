@@ -1,0 +1,165 @@
+{
+    "donnees": {
+        "posts": 4525,
+        "votes": 19909
+    },
+    "mesures": [
+        {
+            "appels": 150,
+            "p95_ms": 0.193,
+            "scenario": "avec_cache_applicatif",
+            "maximum_ms": 0.737,
+            "mediane_ms": 0.109,
+            "moyenne_ms": 0.130,
+            "appels_avec_resultats": 150,
+            "requetes_par_seconde_sequentiel": 7667.54
+        },
+        {
+            "appels": 150,
+            "p95_ms": 65.603,
+            "scenario": "sans_cache_applicatif",
+            "maximum_ms": 547.513,
+            "mediane_ms": 6.867,
+            "moyenne_ms": 28.734,
+            "appels_avec_resultats": 150,
+            "requetes_par_seconde_sequentiel": 34.80
+        }
+    ],
+    "postgresql": "PostgreSQL 18.6 (Ubuntu 18.6-0ubuntu0.26.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, 64-bit",
+    "date_mesure": "2026-09-14T11:00:19.796788+02:00",
+    "taille_base": "53 MB",
+    "tables_et_index": [
+        {
+            "index": "3536 kB",
+            "relname": "posts_2015",
+            "table_et_toast": "4128 kB"
+        },
+        {
+            "index": "2248 kB",
+            "relname": "posts_2016",
+            "table_et_toast": "2488 kB"
+        },
+        {
+            "index": "1816 kB",
+            "relname": "posts_2017",
+            "table_et_toast": "1920 kB"
+        },
+        {
+            "index": "1632 kB",
+            "relname": "posts_2018",
+            "table_et_toast": "1680 kB"
+        },
+        {
+            "index": "592 kB",
+            "relname": "users",
+            "table_et_toast": "2672 kB"
+        },
+        {
+            "index": "1176 kB",
+            "relname": "posts_2019",
+            "table_et_toast": "1176 kB"
+        },
+        {
+            "index": "1112 kB",
+            "relname": "votes_default",
+            "table_et_toast": "1032 kB"
+        },
+        {
+            "index": "1080 kB",
+            "relname": "posts_2020",
+            "table_et_toast": "984 kB"
+        },
+        {
+            "index": "1008 kB",
+            "relname": "posts_2021",
+            "table_et_toast": "1040 kB"
+        },
+        {
+            "index": "896 kB",
+            "relname": "votes_old",
+            "table_et_toast": "1048 kB"
+        },
+        {
+            "index": "976 kB",
+            "relname": "posts_2022",
+            "table_et_toast": "880 kB"
+        },
+        {
+            "index": "224 kB",
+            "relname": "comments",
+            "table_et_toast": "1440 kB"
+        },
+        {
+            "index": "424 kB",
+            "relname": "badges",
+            "table_et_toast": "1128 kB"
+        },
+        {
+            "index": "640 kB",
+            "relname": "posts_2023",
+            "table_et_toast": "544 kB"
+        },
+        {
+            "index": "32 kB",
+            "relname": "search_cache",
+            "table_et_toast": "624 kB"
+        },
+        {
+            "index": "392 kB",
+            "relname": "posts_2024",
+            "table_et_toast": "224 kB"
+        },
+        {
+            "index": "280 kB",
+            "relname": "post_ids",
+            "table_et_toast": "232 kB"
+        },
+        {
+            "index": "56 kB",
+            "relname": "dashboard_posts",
+            "table_et_toast": "256 kB"
+        },
+        {
+            "index": "120 kB",
+            "relname": "post_tags",
+            "table_et_toast": "144 kB"
+        },
+        {
+            "index": "200 kB",
+            "relname": "posts_default",
+            "table_et_toast": "16 kB"
+        }
+    ],
+    "pg_stat_statements": [
+        {
+            "rows": 4,
+            "calls": 4,
+            "query": "SELECT assert_true((SELECT COUNT(*) FROM advanced_search($1))=$2,$3)",
+            "moyenne_ms": 13.087
+        },
+        {
+            "rows": 0,
+            "calls": 2,
+            "query": "DO $$\nDECLARE i INTEGER; q TEXT; start_time timestamptz; n INTEGER;\n        queries TEXT[] := ARRAY['coffee','espresso grinder','brewing temperature','espressso','cold brew'];\nBEGIN\n    -- Cinq requêtes distinctes, répétées 30 fois. Cache applicatif vide puis\n    -- rempli. Le cache de pages PostgreSQL reste chaud dans les deux cas.\n    FOR i IN 1..150 LOOP\n        q := queries[1 + (i-1)%5];\n        DELETE FROM search_cache WHERE scope=search_scope();\n        start_time := clock_timestamp();\n        SELECT COUNT(*) INTO n FROM advanced_search(q);\n        INSERT INTO bench VALUES ('sans_cache_applicatif',extract(epoch FROM clock_timestamp()-start_time)*1000,n);\n        start_time := clock_timestamp();\n        SELECT COUNT(*) INTO n FROM advanced_search(q);\n        INSERT INTO bench VALUES ('avec_cache_applicatif',extract(epoch FROM clock_timestamp()-start_time)*1000,n);\n    END LOOP;\nEND $$",
+            "moyenne_ms": 4394.492
+        },
+        {
+            "rows": 2,
+            "calls": 2,
+            "query": "SELECT assert_true(EXISTS(SELECT FROM advanced_search($1,$2) WHERE post_id=$3),\r\n                   $4)",
+            "moyenne_ms": 17.149
+        },
+        {
+            "rows": 40,
+            "calls": 2,
+            "query": "SELECT * FROM advanced_search($1)",
+            "moyenne_ms": 256.375
+        },
+        {
+            "rows": 1,
+            "calls": 1,
+            "query": "SELECT COUNT(*) FROM advanced_search($1)",
+            "moyenne_ms": 0.193
+        }
+    ]
+}

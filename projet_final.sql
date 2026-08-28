@@ -132,8 +132,6 @@ CREATE TABLE post_tags (
     PRIMARY KEY (post_id, tag_id)
 );
 
-\echo '=== Full-text search : trigger avant le chargement ==='
-
 \echo '=== Import du vrai dump Coffee Stack Exchange ==='
 \copy users (id, reputation, creation_date, display_name, last_access_date, location, about_me, views, up_votes, down_votes, account_id) FROM 'data/stackexchange-coffee/csv/users.csv' WITH (FORMAT csv, HEADER true)
 \copy post_ids (id, creation_date) FROM 'data/stackexchange-coffee/csv/post_ids.csv' WITH (FORMAT csv, HEADER true)
@@ -189,7 +187,7 @@ CREATE TABLE votes (
     post_id INTEGER NOT NULL REFERENCES post_ids(id) ON DELETE CASCADE,
     vote_type_id SMALLINT NOT NULL,
     creation_date TIMESTAMP NOT NULL,
-    user_id INTEGER,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     bounty_amount INTEGER,
     PRIMARY KEY (id, creation_date)
 ) PARTITION BY RANGE (creation_date);
@@ -533,30 +531,31 @@ WITH candidats AS MATERIALIZED (
     FROM posts p
     WHERE p.post_type_id = 1
       AND p.creation_date >= (SELECT MAX(creation_date) FROM posts) - INTERVAL '1 year'
-), commentaires AS (
-    SELECT c.post_id, COUNT(*) AS nombre
-    FROM comments c
-    JOIN candidats x ON x.id = c.post_id
-    GROUP BY c.post_id
 ), upvotes AS (
     SELECT v.post_id, COUNT(*) AS nombre
     FROM votes v
     JOIN candidats x ON x.id = v.post_id
     WHERE v.vote_type_id = 2
     GROUP BY v.post_id
+), premiers AS MATERIALIZED (
+    SELECT x.*, COALESCE(v.nombre, 0) AS upvotes
+    FROM candidats x LEFT JOIN upvotes v ON v.post_id = x.id
+    ORDER BY upvotes DESC, x.id LIMIT 100
+), commentaires AS (
+    SELECT c.post_id, COUNT(*) AS nombre
+    FROM comments c JOIN premiers x ON x.id = c.post_id
+    GROUP BY c.post_id
 )
 SELECT
     x.id,
     x.title,
     u.display_name AS auteur,
     COALESCE(c.nombre, 0) AS commentaires,
-    COALESCE(v.nombre, 0) AS upvotes
-FROM candidats x
+    x.upvotes
+FROM premiers x
 LEFT JOIN users u ON u.id = x.owner_user_id
 LEFT JOIN commentaires c ON c.post_id = x.id
-LEFT JOIN upvotes v ON v.post_id = x.id
-ORDER BY upvotes DESC, x.id
-LIMIT 100;
+ORDER BY x.upvotes DESC, x.id;
 
 \echo '=== Partie 8 - Row-Level Security multi-tenant ==='
 CREATE TABLE tenants (
@@ -790,15 +789,6 @@ SELECT polname, polroles::regrole[], polcmd, pg_get_expr(polqual, polrelid) AS c
 FROM pg_policy
 WHERE polrelid = 'posts'::regclass
 ORDER BY polname;
-
-SELECT
-    query,
-    calls,
-    round(mean_exec_time::numeric, 3) AS moyenne_ms,
-    rows
-FROM pg_stat_statements
-WHERE query ILIKE '%advanced_search%'
-ORDER BY mean_exec_time DESC;
 
 \echo '=== Recherche multilingue et filtres communs ==='
 CREATE FUNCTION search_config_for(p_language TEXT) RETURNS regconfig
@@ -1118,13 +1108,15 @@ FOR EACH ROW
 EXECUTE FUNCTION audit_posts();
 
 \echo '=== Tableau de bord temps reel et questions montantes ==='
-CREATE FUNCTION get_dashboard_metrics() RETURNS JSONB LANGUAGE sql STABLE AS $$
-    SELECT jsonb_build_object(
+CREATE FUNCTION get_dashboard_metrics() RETURNS JSONB LANGUAGE plpgsql STABLE AS $$
+BEGIN
+    RETURN jsonb_build_object(
         'questions_visibles',(SELECT COUNT(*) FROM posts WHERE post_type_id=1),
         'recherches',(SELECT COUNT(*) FROM search_log WHERE scope=search_scope()),
         'p95_ms',(SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms)
                   FROM search_log WHERE scope=search_scope()),
-        'taux_cache',(SELECT AVG(cache_hit::integer) FROM search_log WHERE scope=search_scope()))
+        'taux_cache',(SELECT AVG(cache_hit::integer) FROM search_log WHERE scope=search_scope()));
+END;
 $$;
 CREATE FUNCTION get_rising_questions(p_window INTERVAL DEFAULT INTERVAL '30 days')
 RETURNS TABLE(post_id INTEGER,title VARCHAR,recent_votes BIGINT)
@@ -1144,3 +1136,8 @@ SELECT * FROM advanced_search('coffee brewing');
 SELECT * FROM smart_search('expresso');
 SELECT get_dashboard_metrics();
 REFRESH MATERIALIZED VIEW search_analytics;
+SELECT query,calls,round(mean_exec_time::numeric,3) AS moyenne_ms,rows
+FROM pg_stat_statements
+WHERE query ILIKE '%advanced_search%'
+  AND dbid=(SELECT oid FROM pg_database WHERE datname=current_database())
+ORDER BY mean_exec_time DESC;
